@@ -1,7 +1,6 @@
 use crate::math::Vec3;
 use raylib::prelude::Image;
 
-
 pub struct Texture {
     pub w: usize,
     pub h: usize,
@@ -14,7 +13,6 @@ fn srgb_to_linear(c: u8) -> f32 {
 }
 
 impl Texture {
-    
     pub fn from_png(bytes: &[u8]) -> Texture {
         let img = Image::load_image_from_mem(".png", bytes).expect("no se pudo leer PNG");
         let (w, h) = (img.width() as usize, img.height() as usize);
@@ -28,7 +26,6 @@ impl Texture {
         Texture { w, h, color, alpha }
     }
 
-    
     pub fn sample(&self, u: f32, v: f32) -> (Vec3, f32) {
         let x = ((u.clamp(0.0, 0.9999)) * self.w as f32) as usize;
         let y = ((v.clamp(0.0, 0.9999)) * self.h as f32) as usize;
@@ -36,7 +33,6 @@ impl Texture {
         (self.color[i], self.alpha[i])
     }
 
-    
     pub fn sample_bilinear(&self, u: f32, v: f32) -> Vec3 {
         let fx = (u.clamp(0.0, 1.0) * self.w as f32 - 0.5).max(0.0);
         let fy = (v.clamp(0.0, 1.0) * self.h as f32 - 0.5).max(0.0);
@@ -49,7 +45,6 @@ impl Texture {
         top.lerp(bot, ty)
     }
 
-    
     pub fn average(&self) -> Vec3 {
         let mut s = Vec3::ZERO;
         for c in &self.color {
@@ -58,3 +53,4 @@ impl Texture {
         s / self.color.len() as f32
     }
 }
+

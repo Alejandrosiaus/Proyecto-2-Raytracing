@@ -18,13 +18,7 @@ N = 16
 rng = np.random.default_rng(1234)
 
 
-# Solo se usan 5 materiales en la escena; estas son sus texturas
-USED = {"rock", "log_side", "log_top", "grass_top", "grass_side", "dirt", "flowers_top", "glass"}
-
-
 def save(name, rgb, alpha=None):
-    if name not in USED:
-        return
     rgb = np.clip(rgb, 0, 255).astype(np.uint8)
     if alpha is None:
         alpha = np.full(rgb.shape[:2], 255, np.uint8)

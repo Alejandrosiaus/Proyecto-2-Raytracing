@@ -3,7 +3,7 @@ use crate::math::Vec3;
 #[derive(Clone, Copy, Debug)]
 pub struct Ray {
     pub origin: Vec3,
-    pub dir: Vec3, 
+    pub dir: Vec3, // siempre normalizada
 }
 
 impl Ray {
@@ -14,3 +14,4 @@ impl Ray {
         self.origin + self.dir * t
     }
 }
+

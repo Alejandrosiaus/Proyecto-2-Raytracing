@@ -1,16 +1,14 @@
 use crate::math::Vec3;
 use crate::ray::Ray;
 
-
 #[derive(Clone, Copy)]
 pub struct OrbitCamera {
     pub target: Vec3,
-    pub yaw: f32,      
-    pub pitch: f32,    
-    pub distance: f32, 
-    pub fov: f32,      
+    pub yaw: f32,      // rotación horizontal (radianes)
+    pub pitch: f32,    // rotación vertical (radianes)
+    pub distance: f32, // zoom
+    pub fov: f32,      // campo de visión vertical (grados)
 }
-
 
 pub struct CameraBasis {
     pub eye: Vec3,
@@ -30,7 +28,7 @@ impl OrbitCamera {
 
     pub fn rotate(&mut self, d_yaw: f32, d_pitch: f32) {
         self.yaw += d_yaw;
-        
+        // Limitar el pitch para no voltear la cámara (se permite ver la isla desde abajo)
         self.pitch = (self.pitch + d_pitch).clamp(-1.2, 1.45);
     }
 
@@ -56,7 +54,6 @@ impl OrbitCamera {
 }
 
 impl CameraBasis {
-    
     pub fn ray_for(&self, px: f32, py: f32, width: usize, height: usize) -> Ray {
         let aspect = width as f32 / height as f32;
         let sx = (2.0 * px / width as f32 - 1.0) * aspect * self.half_h;
@@ -65,3 +62,4 @@ impl CameraBasis {
         Ray::new(self.eye, dir)
     }
 }
+

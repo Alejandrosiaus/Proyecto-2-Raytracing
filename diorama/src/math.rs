@@ -1,4 +1,3 @@
-
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -35,7 +34,6 @@ impl Vec3 {
         let l = self.length();
         if l > 0.0 { self / l } else { self }
     }
-    
     pub fn mul_v(self, o: Vec3) -> Vec3 {
         Vec3::new(self.x * o.x, self.y * o.y, self.z * o.z)
     }
@@ -81,12 +79,9 @@ impl Neg for Vec3 {
     fn neg(self) -> Vec3 { Vec3::new(-self.x, -self.y, -self.z) }
 }
 
-
 pub fn reflect(i: Vec3, n: Vec3) -> Vec3 {
     i - n * (2.0 * i.dot(n))
 }
-
-
 
 pub fn refract(i: Vec3, n: Vec3, eta: f32) -> Option<Vec3> {
     let cos_i = -i.dot(n).clamp(-1.0, 1.0);
@@ -98,21 +93,19 @@ pub fn refract(i: Vec3, n: Vec3, eta: f32) -> Option<Vec3> {
     }
 }
 
-
 pub fn fresnel(i: Vec3, n: Vec3, n1: f32, n2: f32) -> f32 {
     let mut cos_i = -i.dot(n).clamp(-1.0, 1.0);
     if n1 > n2 {
         let eta = n1 / n2;
         let sin_t2 = eta * eta * (1.0 - cos_i * cos_i);
         if sin_t2 > 1.0 {
-            return 1.0; 
+            return 1.0; // reflexión interna total
         }
         cos_i = (1.0 - sin_t2).sqrt();
     }
     let r0 = ((n1 - n2) / (n1 + n2)).powi(2);
     r0 + (1.0 - r0) * (1.0 - cos_i).powi(5)
 }
-
 
 pub fn hash2(x: i32, y: i32, seed: u32) -> f32 {
     let mut h = (x as u32).wrapping_mul(374_761_393)
@@ -122,7 +115,6 @@ pub fn hash2(x: i32, y: i32, seed: u32) -> f32 {
     h ^= h >> 16;
     (h & 0x00FF_FFFF) as f32 / 16_777_216.0
 }
-
 
 pub fn value_noise(x: f32, y: f32, seed: u32) -> f32 {
     let (ix, iy) = (x.floor() as i32, y.floor() as i32);
@@ -137,7 +129,6 @@ pub fn value_noise(x: f32, y: f32, seed: u32) -> f32 {
     top + (bot - top) * uy
 }
 
-
 pub fn fbm(x: f32, y: f32, seed: u32) -> f32 {
     let (mut sum, mut amp, mut freq, mut norm) = (0.0, 0.5, 1.0, 0.0);
     for o in 0..4 {
@@ -148,3 +139,4 @@ pub fn fbm(x: f32, y: f32, seed: u32) -> f32 {
     }
     sum / norm
 }
+

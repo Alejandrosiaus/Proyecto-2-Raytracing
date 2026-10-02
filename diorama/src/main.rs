@@ -18,11 +18,11 @@ use std::time::Instant;
 
 const WIN_W: i32 = 1280;
 const WIN_H: i32 = 800;
-
+// Resolución mientras se mueve la cámara y cuando está quieta (se refina sola)
 const LOW: (usize, usize) = (320, 200);
 const HIGH: (usize, usize) = (640, 400);
 const HIGH_MAX_SAMPLES: u32 = 48;
-
+// Video: 10 s a 30 fps
 const VIDEO_FRAMES: u32 = 300;
 const VIDEO_SPP: u32 = 3;
 const VIDEO_RES: (usize, usize) = (1280, 800);
@@ -30,7 +30,6 @@ const VIDEO_RES: (usize, usize) = (1280, 800);
 fn default_camera() -> OrbitCamera {
     OrbitCamera::new(Vec3::new(32.0, 30.0, 43.0), 88.0)
 }
-
 
 fn save_png(path: &str, acc: &Accum) {
     let mut img = Image::gen_image_color(acc.w as i32, acc.h as i32, Color::BLACK);
@@ -42,7 +41,6 @@ fn save_png(path: &str, acc: &Accum) {
     }
     img.export_image(path);
 }
-
 
 fn video_camera(base: &OrbitCamera, frame: u32) -> OrbitCamera {
     let t = frame as f32 / VIDEO_FRAMES as f32;
@@ -67,8 +65,8 @@ fn main() {
         );
     }
 
-    
-    
+    // Modo sin ventana: `cargo run --release -- --shot [spp] [yaw] [pitch] [distancia]`
+    // guarda diorama.png en alta calidad
     if let Some(i) = args.iter().position(|a| a == "--shot") {
         let num = |k: usize| args.get(i + k).and_then(|s| s.parse::<f32>().ok());
         let spp = num(1).unwrap_or(16.0) as u32;
@@ -116,7 +114,7 @@ fn main() {
     while !rl.window_should_close() {
         let dt = rl.get_frame_time().min(0.1);
 
-        
+        // ---------------- Input ----------------
         let mut moved = false;
         let speed = 1.4 * dt;
         let key = |k| rl.is_key_down(k);
@@ -148,7 +146,7 @@ fn main() {
             high.reset();
         }
 
-        
+        // Captura en alta calidad (P) y video (V)
         if rl.is_key_pressed(KeyboardKey::KEY_P) && video_frame.is_none() {
             let mut shot = Accum::new(VIDEO_RES.0, VIDEO_RES.1);
             for _ in 0..16 {
@@ -169,9 +167,9 @@ fn main() {
             }
         }
 
-        
+        // ---------------- Render ----------------
         let t = Instant::now();
-        let mut showing = 0; 
+        let mut showing = 0; // 0 = baja, 1 = alta, 2 = video
         if let Some(f) = video_frame {
             let c = video_camera(&video_base, f);
             video.reset();
@@ -202,7 +200,7 @@ fn main() {
             render_ms = render_ms * 0.8 + t.elapsed().as_secs_f32() * 1000.0 * 0.2;
         }
 
-        
+        // ---------------- Dibujar ----------------
         let fps = rl.get_fps();
         let mut d = rl.begin_drawing(&thread);
         d.clear_background(Color::BLACK);
@@ -248,3 +246,4 @@ fn main() {
         }
     }
 }
+

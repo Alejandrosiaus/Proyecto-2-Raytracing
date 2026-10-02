@@ -15,10 +15,8 @@ pub const PLANKS: Block = 6;
 pub const BRICKS: Block = 7;
 pub const ROOF: Block = 8;
 pub const GLASS: Block = 9;
-#[allow(dead_code)]
 pub const WATER: Block = 10;
 pub const LOG: Block = 11;
-#[allow(dead_code)]
 pub const LEAVES: Block = 12;
 pub const LANTERN: Block = 13;
 pub const MARBLE: Block = 14;
@@ -28,7 +26,6 @@ pub const POST: Block = 17;
 #[allow(dead_code)]
 pub const FENCE: Block = 18;
 pub const BLOCK_COUNT: usize = 19;
-
 
 #[derive(Clone, Copy)]
 pub enum Shape {
@@ -43,25 +40,25 @@ pub struct BlockDef {
 }
 
 pub const BLOCKS: [BlockDef; BLOCK_COUNT] = [
-    BlockDef { material: M_PIEDRA, shape: Shape::Full },     
-    BlockDef { material: M_PIEDRA, shape: Shape::Full },     
-    BlockDef { material: M_PASTO, shape: Shape::Full },      
-    BlockDef { material: M_FLORES, shape: Shape::Full },    
-    BlockDef { material: M_PIEDRA, shape: Shape::Full },     
-    BlockDef { material: M_PIEDRA, shape: Shape::Box([0.0, 0.0, 0.0], [1.0, 0.5, 1.0]) }, 
-    BlockDef { material: M_MADERA, shape: Shape::Full },     
-    BlockDef { material: M_PIEDRA, shape: Shape::Full },     
-    BlockDef { material: M_MADERA, shape: Shape::Full },     
-    BlockDef { material: M_VIDRIO, shape: Shape::Full },      
-    BlockDef { material: M_VIDRIO, shape: Shape::Full },     
-    BlockDef { material: M_MADERA, shape: Shape::Full },        
-    BlockDef { material: M_PASTO, shape: Shape::Full },      
-    BlockDef { material: M_VIDRIO, shape: Shape::Box([0.28, 0.05, 0.28], [0.72, 0.7, 0.72]) }, 
-    BlockDef { material: M_PIEDRA, shape: Shape::Full },     
-    BlockDef { material: M_PIEDRA, shape: Shape::Box([0.18, 0.0, 0.4], [0.82, 0.9, 0.6]) },     
-    BlockDef { material: M_PIEDRA, shape: Shape::Full },       
-    BlockDef { material: M_MADERA, shape: Shape::Box([0.42, 0.0, 0.42], [0.58, 1.0, 0.58]) },   
-    BlockDef { material: M_MADERA, shape: Shape::Box([0.0, 0.0, 0.43], [1.0, 1.0, 0.57]) },   
+    BlockDef { material: M_ROCK, shape: Shape::Full },       // AIR (no se usa)
+    BlockDef { material: M_ROCK, shape: Shape::Full },       // ROCK
+    BlockDef { material: M_GRASS, shape: Shape::Full },      // GRASS
+    BlockDef { material: M_FLOWERS, shape: Shape::Full },    // FLOWERS
+    BlockDef { material: M_COBBLE, shape: Shape::Full },     // COBBLE
+    BlockDef { material: M_COBBLE, shape: Shape::Box([0.0, 0.0, 0.0], [1.0, 0.5, 1.0]) }, // escalón / losa
+    BlockDef { material: M_PLANKS, shape: Shape::Full },     // PLANKS
+    BlockDef { material: M_BRICKS, shape: Shape::Full },     // BRICKS
+    BlockDef { material: M_ROOF, shape: Shape::Full },       // ROOF
+    BlockDef { material: M_GLASS, shape: Shape::Full },      // GLASS
+    BlockDef { material: M_WATER, shape: Shape::Full },      // WATER
+    BlockDef { material: M_LOG, shape: Shape::Full },        // LOG
+    BlockDef { material: M_LEAVES, shape: Shape::Full },     // LEAVES
+    BlockDef { material: M_LANTERN, shape: Shape::Box([0.28, 0.05, 0.28], [0.72, 0.7, 0.72]) }, // farol
+    BlockDef { material: M_MARBLE, shape: Shape::Full },     // MARBLE
+    BlockDef { material: M_ROCK, shape: Shape::Box([0.18, 0.0, 0.4], [0.82, 0.9, 0.6]) },     // lápida
+    BlockDef { material: M_DIRT, shape: Shape::Full },       // DIRT
+    BlockDef { material: M_LOG, shape: Shape::Box([0.42, 0.0, 0.42], [0.58, 1.0, 0.58]) },   // poste
+    BlockDef { material: M_PLANKS, shape: Shape::Box([0.0, 0.0, 0.43], [1.0, 1.0, 0.57]) },   // tabla de reja (no se usa)
 ];
 
 #[derive(Clone, Copy)]
@@ -71,16 +68,12 @@ pub struct PointLight {
     pub intensity: f32,
 }
 
-
 #[derive(Clone, Copy)]
 pub struct Hit {
     pub t: f32,
     pub point: Vec3,
-    
-    
     pub normal: Vec3,
     pub block: Block,
-    
     pub exit: bool,
 }
 
@@ -122,8 +115,6 @@ impl World {
         self.cells.iter().filter(|&&b| b != AIR).count()
     }
 
-    
-    
     fn dda<T>(
         &self,
         ray: &Ray,
@@ -134,7 +125,7 @@ impl World {
         let d = ray.dir;
         let size = Vec3::new(self.nx as f32, self.ny as f32, self.nz as f32);
 
-        
+        // Intersección con la caja de todo el mundo
         let mut t0 = 0.0f32;
         let mut t1 = t_limit;
         let mut entry_axis = 3;
@@ -190,7 +181,7 @@ impl World {
             if let Some(r) = visit(cell, t_enter, t_exit, axis, step) {
                 return Some(r);
             }
-            
+            // Avanzar a la siguiente celda por el eje con el t más pequeño
             axis = if t_max[0] < t_max[1] {
                 if t_max[0] < t_max[2] { 0 } else { 2 }
             } else if t_max[1] < t_max[2] { 1 } else { 2 };
@@ -208,12 +199,11 @@ impl World {
         }
     }
 
-    
     fn box_hit(ray: &Ray, cell: [i32; 3], shape: Shape, t_enter: f32, axis: usize, step: [i32; 3]) -> Option<(f32, Vec3)> {
         match shape {
             Shape::Full => {
                 if axis == 3 {
-                    return None; 
+                    return None; // el origen está dentro del bloque
                 }
                 let mut n = [0.0f32; 3];
                 n[axis] = -step[axis] as f32;
@@ -254,14 +244,12 @@ impl World {
         }
     }
 
-    
-    
     pub fn trace(&self, ray: &Ray, medium: Block, t_limit: f32) -> Option<Hit> {
         self.dda(ray, t_limit, |cell, t_enter, _t_exit, axis, step| {
             let b = self.get(cell[0], cell[1], cell[2]);
             if medium != AIR {
                 if b == medium {
-                    return None; 
+                    return None; // seguimos dentro del agua/vidrio
                 }
                 if axis == 3 {
                     return None;
@@ -271,10 +259,10 @@ impl World {
                 n[axis] = step[axis] as f32;
                 let normal = Vec3::new(n[0], n[1], n[2]);
                 return if b == AIR || !full {
-                    
+                    // Salimos del medio hacia el aire
                     Some(Hit { t: t_enter, point: ray.at(t_enter), normal, block: medium, exit: true })
                 } else {
-                    
+                    // Chocamos con un bloque sólido estando dentro del medio
                     Some(Hit { t: t_enter, point: ray.at(t_enter), normal: -normal, block: b, exit: false })
                 };
             }
@@ -287,8 +275,6 @@ impl World {
         })
     }
 
-    
-    
     pub fn transmittance(&self, ray: &Ray, t_limit: f32, materials: &[Material]) -> f32 {
         let mut light = 1.0f32;
         let mut last_transparent: Block = AIR;
@@ -319,10 +305,10 @@ impl World {
         if blocked == Some(true) { 0.0 } else { light }
     }
 
-    
     #[inline]
     pub fn occludes(&self, x: i32, y: i32, z: i32) -> bool {
         let b = self.get(x, y, z);
         b != AIR && b != GLASS && b != WATER && b != LANTERN && b != POST && b != GRAVE && b != FENCE
     }
 }
+

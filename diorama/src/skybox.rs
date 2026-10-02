@@ -3,7 +3,7 @@ use crate::math::Vec3;
 use crate::texture::Texture;
 
 pub struct Skybox {
-    
+    // Orden: +X, -X, +Y, -Y, +Z, -Z
     faces: [Texture; 6],
     pub intensity: f32,
 }
@@ -23,7 +23,6 @@ impl Skybox {
         }
     }
 
-    
     pub fn sample(&self, d: Vec3) -> Vec3 {
         let (ax, ay, az) = (d.x.abs(), d.y.abs(), d.z.abs());
         let (face, u, v) = if ax >= ay && ax >= az {
@@ -38,3 +37,4 @@ impl Skybox {
         self.faces[face].sample_bilinear((u + 1.0) * 0.5, (v + 1.0) * 0.5) * self.intensity
     }
 }
+

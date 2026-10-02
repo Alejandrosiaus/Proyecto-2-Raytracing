@@ -9,7 +9,6 @@ use crate::skybox::Skybox;
 use crate::texture::Texture;
 use crate::world::*;
 
-
 pub const MAX_DEPTH: u32 = 5;
 
 pub struct Scene {
@@ -32,7 +31,7 @@ impl Scene {
             materials,
             textures,
             sky: Skybox::load(),
-            
+            // Debe coincidir con la luna dibujada en el skybox (tools/generate_assets.py)
             moon_dir: Vec3::new(-0.35, 0.42, -0.84).normalize(),
             moon_color: Vec3::new(0.80, 0.85, 1.0) * 1.35,
             fog_color: Vec3::new(0.55, 0.56, 0.59),
@@ -40,22 +39,21 @@ impl Scene {
         }
     }
 
-    
     pub fn trace(&self, ray: &Ray, depth: u32, medium: Block) -> Vec3 {
         let Some(hit) = self.world.trace(ray, medium, 500.0) else {
             return self.sky.sample(ray.dir) + self.halo(ray, f32::INFINITY);
         };
 
         let mut color = if hit.exit {
-            
+            // El rayo sale del agua/vidrio al aire: refracción de salida
             let m = &self.materials[BLOCKS[medium as usize].material];
-            let nf = -hit.normal; 
+            let nf = -hit.normal; // normal contra el rayo
             if depth >= MAX_DEPTH {
                 self.sky.sample(ray.dir) * 0.5
             } else {
                 match refract(ray.dir, nf, m.ior) {
                     Some(d2) => self.trace(&Ray::new(hit.point + hit.normal * 1e-3, d2), depth + 1, AIR),
-                    
+                    // Reflexión interna total: el rayo rebota dentro del medio
                     None => self.trace(&Ray::new(hit.point - hit.normal * 1e-3, reflect(ray.dir, nf)), depth + 1, medium),
                 }
             }
@@ -64,20 +62,18 @@ impl Scene {
         };
 
         if medium != AIR {
-            
+            // Absorción dentro del medio (el agua profunda se ve más oscura y verdosa)
             let m = &self.materials[BLOCKS[medium as usize].material];
             let absorb = (Vec3::ONE - m.tint * 0.7) * (-m.absorption * hit.t);
             color = color.mul_v(absorb.exp());
         } else {
-            
+            // Niebla suave del sueño
             let f = 1.0 - (-hit.t * self.fog_density).exp();
             color = color.lerp(self.fog_color, f) + self.halo(ray, hit.t);
         }
         color
     }
 
-    
-    
     fn halo(&self, ray: &Ray, t_max: f32) -> Vec3 {
         let mut glow = Vec3::ZERO;
         for light in &self.world.lights {
@@ -99,7 +95,7 @@ impl Scene {
         let m = &self.materials[def.material];
         let n = hit.normal;
 
-        
+        // --- Textura ---
         let (u, v) = face_uv(hit.point, n);
         let tex = if n.y > 0.5 { m.tex_top } else if n.y < -0.5 { m.tex_bottom } else { m.tex_side };
         let (base, alpha) = self.textures[tex].sample(u, v);
@@ -111,7 +107,7 @@ impl Scene {
         let p = hit.point + n * 2e-3;
         let view = -ray.dir;
 
-        
+        // --- Luz ambiental (cielo), con oclusión ambiental y visibilidad del cielo ---
         let sky_up = Vec3::new(0.30, 0.32, 0.38);
         let sky_down = Vec3::new(0.16, 0.16, 0.18);
         let hemi = sky_down.lerp(sky_up, n.y * 0.5 + 0.5);
@@ -123,7 +119,7 @@ impl Scene {
         let mut diffuse = Vec3::ZERO;
         let mut spec = Vec3::ZERO;
 
-        
+        // --- Luna (luz direccional con sombras) ---
         let l = self.moon_dir;
         let ndl = n.dot(l);
         if ndl > 0.0 {
@@ -135,7 +131,7 @@ impl Scene {
             }
         }
 
-        
+        // --- Faroles (luces puntuales con sombras y atenuación) ---
         for light in &self.world.lights {
             let to_l = light.pos - p;
             let d = to_l.length();
@@ -160,7 +156,7 @@ impl Scene {
 
         let local = base.mul_v(ambient + diffuse * m.albedo[0]) + spec * m.albedo[1];
 
-        
+        // --- Reflexión y refracción ---
         let transparency = m.transparency * (1.0 - alpha);
         let (n1, n2) = if medium == AIR { (1.0, m.ior) } else { (m.ior, 1.0) };
         let kr = if transparency > 0.0 { fresnel(ray.dir, n, n1, n2) } else { 0.0 };
@@ -187,7 +183,6 @@ impl Scene {
         color
     }
 
-    
     fn ambient_occlusion(&self, point: Vec3, n: Vec3) -> f32 {
         let na = if n.x.abs() > 0.5 { 0 } else if n.y.abs() > 0.5 { 1 } else { 2 };
         let (ua, va) = match na {
@@ -220,9 +215,8 @@ impl Scene {
     }
 }
 
-
 fn face_uv(p: Vec3, n: Vec3) -> (f32, f32) {
-    let q = p - n * 1e-3; 
+    let q = p - n * 1e-3; // un poco hacia adentro del bloque
     let l = Vec3::new(q.x - q.x.floor(), q.y - q.y.floor(), q.z - q.z.floor());
     if n.x > 0.5 {
         (1.0 - l.z, 1.0 - l.y)
@@ -238,7 +232,6 @@ fn face_uv(p: Vec3, n: Vec3) -> (f32, f32) {
         (1.0 - l.x, 1.0 - l.y)
     }
 }
-
 
 pub struct Accum {
     pub w: usize,
@@ -261,8 +254,6 @@ impl Accum {
 fn threads() -> usize {
     std::thread::available_parallelism().map_or(4, |n| n.get())
 }
-
-
 
 pub fn render_pass(scene: &Scene, cam: &CameraBasis, acc: &mut Accum) {
     let (w, h) = (acc.w, acc.h);
@@ -293,7 +284,6 @@ pub fn render_pass(scene: &Scene, cam: &CameraBasis, acc: &mut Accum) {
     resolve(acc);
 }
 
-
 fn resolve(acc: &mut Accum) {
     let inv = 1.0 / acc.samples.max(1) as f32;
     let aces = |x: f32| ((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14)).clamp(0.0, 1.0);
@@ -303,7 +293,7 @@ fn resolve(acc: &mut Accum) {
         for (src, dst) in acc.data.chunks(per).zip(acc.rgba.chunks_mut(per * 4)) {
             s.spawn(move || {
                 for (c, o) in src.iter().zip(dst.chunks_mut(4)) {
-                    let c = *c * inv * 1.1; 
+                    let c = *c * inv * 1.1; // exposición
                     o[0] = (aces(c.x).powf(1.0 / 2.2) * 255.0) as u8;
                     o[1] = (aces(c.y).powf(1.0 / 2.2) * 255.0) as u8;
                     o[2] = (aces(c.z).powf(1.0 / 2.2) * 255.0) as u8;
@@ -313,3 +303,4 @@ fn resolve(acc: &mut Accum) {
         }
     });
 }
+
